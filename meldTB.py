@@ -141,8 +141,8 @@ time.sleep(tscale*waitfactor)
 
 fieldnames=['bias','amp','field','field_f','phase','tscale','fft']
 csvfile = open('./data.csv','w')
-writer=csv.DictWriter(csvfile,fieldnames=fieldnames)
-writer.writeheader()
+writer=csv.writer(csvfile,delimiter=',')
+writer.writerow(fieldnames)
 
 for dc in [.5]:
     for amp_drive in [.1]:

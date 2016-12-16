@@ -26,6 +26,8 @@ probe = "PROB"
 voffs = "OFFS"
 operator = "OPER"
 byte = "BYTE"
+center = "HCEN"
+
 class RigolScope:
     """Class to control a Rigol DS1000 series oscilloscope"""
     def __init__(self, device = None):
@@ -112,7 +114,13 @@ class RigolScope:
         chan=self.chanNum(c)
             
         command = ':'+chan+':'+scale + ' ' + str(s)
-        #print command
+        print command
+        self.write(command)
+
+    def mathScale(self, s):
+        
+        command = ':MATH:SCAL' + ' ' + str(s)
+        print command
         self.write(command)
 
     def getAve(self, c):
@@ -130,10 +138,10 @@ class RigolScope:
 
         return out
     
-    def setFFT(self,c,stat):
+    def setFFT(self,c,stat,f_field):
         chan=self.chanNum(c)
-
-        command = ':' + math + ':' + source + ' ' + chan
+        
+        command = ':' + math + ':' + source + str(1)+ ' ' + chan
         print command
         self.write(command)
 
@@ -141,7 +149,7 @@ class RigolScope:
         print command
         self.write(command)
 
-        command = ':' + fft + ':' + source + ' ' + chan
+        command = ':' + math + ':' + fft + ':' + center + ' ' + str(f_field)
         print command
         self.write(command)
 

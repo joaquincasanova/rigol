@@ -147,62 +147,61 @@ writer.writeheader()
 for dc in np.arange(0.2,.6,.1):
     for amp_drive in np.arange(0.05,0.3,.05):
         for f_field in [10., 100., 1000.]:
-            scope.run()
-            tscale = 20e-3
-            scope.setTimeScale(tscale)    
+            for amp_field in [0.1, 1., 10.]:
+                scope.run()
+                tscale = 20e-3
+                scope.setTimeScale(tscale)    
 
-            f_bias = 1e-6
-            amp_bias = dc*2.
-            d_bias=50
+                f_bias = 1e-6
+                amp_bias = dc*2.
+                d_bias=50
 
-            amp_field =1.
+                f_lo = 1e5
+                amp_lo = 5.
+                ph_lo = np.arange(-180,180,1)
+                ave = 14.0*np.ones(ph_lo.shape)
+                #1022
+                fg1.square(2,f_bias,amp_bias,0.,50)#bias
+                fg1.sine(1,f_field,amp_field,0.,0)#field
 
-            f_lo = 1e5
-            amp_lo = 5.
-            ph_lo = np.arange(-180,180,1)
-            ave = 14.0*np.ones(ph_lo.shape)
-            #1022
-            fg1.square(2,f_bias,amp_bias,0.,50)#bias
-            fg1.sine(1,f_field,amp_field,0.,0)#field
+                idx=0
+                #1022u
+                fg2.sine(2,f_lo,amp_drive,0.,0)#drive
+                fg2.sine(1,f_lo,amp_lo,0.,0)#lo - need to adjust phase
 
-            idx=0
-            #1022u
-            fg2.sine(2,f_lo,amp_drive,0.,0)#drive
-            fg2.sine(1,f_lo,amp_lo,0.,0)#lo - need to adjust phase
+                fg1.on(1)
+                fg1.on(2)
 
-            fg1.on(1)
-            fg1.on(2)
+                fg2.on(1)
+                fg2.on(2)
 
-            fg2.on(1)
-            fg2.on(2)
+                for ph in ph_lo:
+                    #sweep until error stops decreasing
+                    fg2.phase(1,ph)
+                    time.sleep(waitfactor*tscale)
+                    ave[idx] = scope.getAve(2)
+                    print ph, ave[idx]
+                    if idx>=1 and abs(ave[idx])>abs(ave[idx-1]) and abs(ave[idx])<10.:
+                        break
+                    else:
+                        idx += 1
 
-            for ph in ph_lo:
-                #sweep until error stops decreasing
+                idx = np.argmin(abs(ave))
+                ph = ph_lo[idx]
+                print "Min phase: ",ph, ave[idx]
                 fg2.phase(1,ph)
+
+                tscale = 1./f_field*20.#timescale for fft
+                scope.setTimeScale(tscale)    
+
                 time.sleep(waitfactor*tscale)
-                ave[idx] = scope.getAve(2)
-                print ph, ave[idx]
-                if idx>=1 and abs(ave[idx])>abs(ave[idx-1]) and abs(ave[idx])<10.:
-                    break
-                else:
-                    idx += 1
-
-            idx = np.argmin(abs(ave))
-            ph = ph_lo[idx]
-            print "Min phase: ",ph, ave[idx]
-            fg2.phase(1,ph)
-
-            tscale = 1./f_field*20.#timescale for fft
-            scope.setTimeScale(tscale)    
-
-            time.sleep(waitfactor*tscale)
-            scope.setScale(2,5.)
-            scope.setOffset(2,0)
-            #scope.setFFT(2, 1)
-            time.sleep(tscale*waitfactor)
-            scope.stop()
-            wav=scope.getWave(2)#'math')
-            writer.writerow({'bias':dc,'amp':amp_drive,'field':amp_field,'field_f':f_field,'phase':ph,'tscale':tscale,'fft':wav})
+                scope.setScale(2,2.)
+                scope.setOffset(2,0)
+                #scope.setFFT(2, 1)
+                time.sleep(tscale*waitfactor)
+                scope.stop()
+                wav=scope.getWave(2)
+                writer.writerow({'bias':dc,'amp':amp_drive,'field':amp_field,'field_f':f_field,'phase':ph,'tscale':tscale,'fft':wav})
 
 csvfile.close()
 

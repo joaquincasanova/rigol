@@ -210,7 +210,7 @@ for dc in [.5]:
                     wav=[string.atof(w) for w in wav]
                     row=[dc,amp_drive,amp_field,f_field,ph,tscale]
                     row=np.hstack((row,wav))
-                    writer.writerow(row)#{'bias':dc,'amp':amp_drive,'field':amp_field,'field_f':f_field,'phase':ph,'tscale':tscale,'fft':wav})
+                    writer.writerow(row)
                 
 csvfile.close()
 

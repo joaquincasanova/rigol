@@ -18,6 +18,7 @@ data = "DATA?"
 item = "ITEM?"
 scale = "SCAL"
 ave = "VAVG"
+vmax = "VMAX"
 timescale = "TIM"
 tscal = "SCAL?"
 toffs = "OFFS?"
@@ -114,24 +115,39 @@ class RigolScope:
         chan=self.chanNum(c)
             
         command = ':'+chan+':'+scale + ' ' + str(s)
-        print command
+        #print command
         self.write(command)
 
     def mathScale(self, s):
         
         command = ':MATH:SCAL' + ' ' + str(s)
-        print command
+        #print command
         self.write(command)
 
     def getAve(self, c):
         chan=self.chanNum(c)
            
         command = ':'+meas+':'+source + ' ' + chan
-        print command
+        #print command
         self.write(command)
            
         command = ':'+meas+':'+item + ' ' + ave + ','+chan
-        print command
+        #print command
+        self.write(command)
+
+        out = self.read(32)
+
+        return out
+
+    def getMax(self, c):
+        chan=self.chanNum(c)
+           
+        command = ':'+meas+':'+source + ' ' + chan
+        #print command
+        self.write(command)
+           
+        command = ':'+meas+':'+item + ' ' + vmax + ','+chan
+        #print command
         self.write(command)
 
         out = self.read(32)
@@ -189,25 +205,26 @@ class RigolScope:
         chan=self.chanNum(c)
            
         command = ':'+chan+':'+disp + ' ' + str(stat)
-        print command
+        #print command
         self.write(command)
 
     def setProbe(self, c, atten):
         chan=self.chanNum(c)
            
         command = ':'+chan+':'+probe + ' ' + str(atten)
-        print command
+        #print command
         self.write(command)
 
     def setOffset(self, c, offset):
         chan=self.chanNum(c)
            
         command = ':'+chan+':'+voffs+ ' ' + str(offset)
-        print command
+        #print command
         self.write(command)
 
     def setTimeScale(self,scal):
            
         command = ':TIM:MAIN:' + tscal[0:-1]+' ' + str(scal)
-        print command
+
+        #print command
         self.write(command)

@@ -31,7 +31,7 @@ class RigolFunctionGenerator:
         self.name=self.meas.read()
         print 'FG: ',self.device,self.name
     def w(self,command):
-        if len(command) < 30: print "FG: ", self.name, command
+        #if len(command) < 30: print "FG: ", self.name, command
         self.meas.write(command)
         time.sleep(0.2)
  

@@ -139,16 +139,16 @@ scope.run()
 time.sleep(tscale*waitfactor)
 
 
-fieldnames=['bias','amp','field','field_f','phase','tscale','fft']
-csvfile = open('./data1.csv','w')
+fieldnames=['f_lo','phase','tscale','fft']
+csvfile = open('./data2.csv','w')
 writer=csv.writer(csvfile,delimiter=',')
 writer.writerow(fieldnames)
 try:
-    for dc in [.3,.45,.5]:
+    for dc in [.45]:
         for amp_drive in [.1]:
-            for f_field in [10.,100.,1000.]:
-                for amp_field in [.1, 1., 10.]:
-                    for phase_inv in [1.]:
+            for f_field in [10.]:
+                for amp_field in [1.]:
+                    for f_lo in [9.6e4,9.7e4, 9.8e4, 9.9e4, 10.0e4, 10.1e4,10.2e4,10.3e4,10.4e4]:
                         scope.run()
                         tscale = 2e-3
                         scope.setTimeScale(tscale)
@@ -159,9 +159,9 @@ try:
                         amp_bias = dc*2.
                         d_bias=50
 
-                        f_lo = 1e5
+                        #f_lo = 1e5
                         amp_lo = 5.
-                        ph_lo = phase_inv*np.arange(-180,180,1)
+                        ph_lo = np.arange(-180,180,1)
                         ave = 14.0*np.ones(ph_lo.shape)
                         #1022
                         fg1.square(2,f_bias,amp_bias,0.,50)#bias
@@ -223,7 +223,7 @@ try:
                         wav=scope.getWave('math')
                         wav=string.split(wav,',')
                         wav=[string.atof(w) for w in wav]
-                        row=[dc,amp_drive,amp_field,f_field,ph,tscale]
+                        row=[f_lo,ph,tscale]
                         row=np.hstack((row,wav))
                         writer.writerow(row)
 
@@ -242,7 +242,7 @@ try:
 except KeyboardInterrupt:
     csvfile.close()
 
-    print "Quitting on: ", field_f, amp_field, dc, amp_drive
+    print "Quitting on: ", f_lo
     fg1.off(1)
     fg2.off(1)
 

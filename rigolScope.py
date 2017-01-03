@@ -19,6 +19,7 @@ item = "ITEM?"
 scale = "SCAL"
 ave = "VAVG"
 vmax = "VMAX"
+vmin = "VMIN"
 timescale = "TIM"
 tscal = "SCAL?"
 toffs = "OFFS?"
@@ -113,14 +114,21 @@ class RigolScope:
 
     def setScale(self, c, s):
         chan=self.chanNum(c)
+    
+        command = ':'+chan+':'+'VERN ON'
+        #print command
+        self.write(command)
             
         command = ':'+chan+':'+scale + ' ' + str(s)
         #print command
         self.write(command)
 
-    def mathScale(self, s):
+    def mathScale(self, s, o):
         
         command = ':MATH:SCAL' + ' ' + str(s)
+        #print command
+        self.write(command)
+        command = ':MATH:OFFS' + ' ' + str(o)
         #print command
         self.write(command)
 
@@ -136,8 +144,23 @@ class RigolScope:
         self.write(command)
 
         out = self.read(32)
+        
+        return float(out)
 
-        return out
+    def getMin(self, c):
+        chan=self.chanNum(c)
+           
+        command = ':'+meas+':'+source + ' ' + chan
+        #print command
+        self.write(command)
+           
+        command = ':'+meas+':'+item + ' ' + vmin + ','+chan
+        #print command
+        self.write(command)
+
+        out = self.read(32)
+        print out
+        return float(out)
 
     def getMax(self, c):
         chan=self.chanNum(c)
@@ -151,8 +174,8 @@ class RigolScope:
         self.write(command)
 
         out = self.read(32)
-
-        return out
+        print out
+        return float(out)
     
     def setFFT(self,c,stat,f_field):
         chan=self.chanNum(c)

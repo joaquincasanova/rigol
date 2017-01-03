@@ -4,6 +4,7 @@ import usbtmc
 import time
 import rigolScope
 import rigolFG
+import rigolUtils
 import matplotlib.pyplot as plot
 import sys
 import numpy as np
@@ -11,92 +12,7 @@ from time import strftime
 import csv
 import string
 nameQ = '*IDN?'
-def discoverFG():
-    #what's connected? query.
-    lod = usbtmc.getDeviceList()
-    print lod
-    if len(lod)==3:
-        d = [usbtmc.UsbTmcDriver(lod[0]), usbtmc.UsbTmcDriver(lod[1]), usbtmc.UsbTmcDriver(lod[2])]
-        d[0].write(nameQ)
-        d[1].write(nameQ)
-        d[2].write(nameQ)
-        time.sleep(0.2)
-        if d[0].read()=='':
-            scID = lod[0]
-            scDr = d[0]
-            fgID1 = lod[1]
-            fgDr1 = d[1]
-            fgID2 = lod[2]
-            fgDr2 = d[2]
-        elif d[1].read()=='':
-            scID = lod[1]
-            scDr = d[1]
-            fgID1 = lod[0]
-            fgDr1 = d[0]
-            fgID2 = lod[2]
-            fgDr2 = d[2]
-        else:
-            scID = lod[2]
-            scDr = d[2]
-            fgID1 = lod[0]
-            fgDr1 = d[0]
-            fgID2 = lod[1]
-            fgDr2 = d[1]
-    elif len(lod)==2:
-        d = [usbtmc.UsbTmcDriver(lod[0]), usbtmc.UsbTmcDriver(lod[1])]
-        d[0].write(nameQ)
-        d[1].write(nameQ)
-        time.sleep(0.2)
-        if d[0].read()=='':
-            scID = lod[0]
-            scDr = d[0]
-            fgID1 = lod[1]
-            fgDr1 = d[1]
-            fgID2 = None
-            fgDr2 = None
-        elif d[1].read()=='':
-            scID = lod[1]
-            scDr = d[1]
-            fgID1 = lod[0]
-            fgDr1 = d[0]
-            fgID2 = None
-            fgDr2 = None
-        else:
-            scID = None
-            scDr = None
-            fgID2 = lod[1]
-            fgID2 = d[1]
-            fgID1 = lod[0]
-            fgDr1 = d[0]
-    elif len(lod)==1:
-        d = usbtmc.UsbTmcDriver(lod)
-        d.write(nameQ)
-        time.sleep(0.2)
-        if d.read()=='':
-            scID = lod
-            scDr = d
-            fgID1 = None
-            fgDr1 = None
-            fgID2 = None
-            fgDr2 = None
-        else:
-            fgID1 = lod
-            fgDr1 = d
-            fgID2 = None
-            fgDr2 = None
-            scID = None
-            scDr = None
-    else:
-        fgID1 = None
-        fgDr1 = None
-        fgID2 = None
-        fgDr2 = None
-        scID = None
-        scDr = None
-
-    return fgID1, fgDr1, fgID2, fgDr2,scID, scDr
-
-fgID1, fgDr1,fgID2, fgDr2, scID, scDr = discoverFG()
+fgID1, fgDr1,fgID2, fgDr2, scID, scDr = rigolUtils.discoverFG()
 
 fgDr1.write(nameQ)
 time.sleep(.2)
@@ -139,16 +55,16 @@ scope.run()
 time.sleep(tscale*waitfactor)
 
 
-fieldnames=['f_lo','phase','tscale','fft']
-csvfile = open('./data2.csv','w')
+fieldnames=['bias','amp','f_lo','field_f','phase','tscale','fft']
+csvfile = open('./data_no_fb_bias_fine.csv','w')
 writer=csv.writer(csvfile,delimiter=',')
 writer.writerow(fieldnames)
 try:
-    for dc in [.45]:
+    for dc in [.3,.31,.32,.33,.34,.35,.36,.37,.38]:
         for amp_drive in [.1]:
-            for f_field in [10.]:
+            for f_field in [10.,100.,1000.]:
                 for amp_field in [1.]:
-                    for f_lo in [9.6e4,9.7e4, 9.8e4, 9.9e4, 10.0e4, 10.1e4,10.2e4,10.3e4,10.4e4]:
+                    for f_lo in [10.0e4]:
                         scope.run()
                         tscale = 2e-3
                         scope.setTimeScale(tscale)
@@ -223,7 +139,7 @@ try:
                         wav=scope.getWave('math')
                         wav=string.split(wav,',')
                         wav=[string.atof(w) for w in wav]
-                        row=[f_lo,ph,tscale]
+                        row=[dc,amp_drive,f_lo,f_field,ph,tscale]
                         row=np.hstack((row,wav))
                         writer.writerow(row)
 

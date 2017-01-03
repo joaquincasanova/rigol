@@ -1,0 +1,14 @@
+
+col_cost=0
+col_cost_step=1
+col_n_conv1=2
+col_n_conv2=3
+col_n_layer=4        
+col_n_step=5         
+col_rmse=6         
+col_acc=7         
+col_ce=8         
+col_rmse_last=9        
+col_acc_last=10       
+col_ce_last=11   
+

@@ -4,6 +4,7 @@ import usbtmc
 import time
 import rigolScope
 import rigolFG
+import rigolUtils
 import matplotlib.pyplot as plot
 import sys
 import numpy as np
@@ -11,92 +12,8 @@ from time import strftime
 import csv
 import string
 nameQ = '*IDN?'
-def discoverFG():
-    #what's connected? query.
-    lod = usbtmc.getDeviceList()
-    print lod
-    if len(lod)==3:
-        d = [usbtmc.UsbTmcDriver(lod[0]), usbtmc.UsbTmcDriver(lod[1]), usbtmc.UsbTmcDriver(lod[2])]
-        d[0].write(nameQ)
-        d[1].write(nameQ)
-        d[2].write(nameQ)
-        time.sleep(0.2)
-        if d[0].read()=='':
-            scID = lod[0]
-            scDr = d[0]
-            fgID1 = lod[1]
-            fgDr1 = d[1]
-            fgID2 = lod[2]
-            fgDr2 = d[2]
-        elif d[1].read()=='':
-            scID = lod[1]
-            scDr = d[1]
-            fgID1 = lod[0]
-            fgDr1 = d[0]
-            fgID2 = lod[2]
-            fgDr2 = d[2]
-        else:
-            scID = lod[2]
-            scDr = d[2]
-            fgID1 = lod[0]
-            fgDr1 = d[0]
-            fgID2 = lod[1]
-            fgDr2 = d[1]
-    elif len(lod)==2:
-        d = [usbtmc.UsbTmcDriver(lod[0]), usbtmc.UsbTmcDriver(lod[1])]
-        d[0].write(nameQ)
-        d[1].write(nameQ)
-        time.sleep(0.2)
-        if d[0].read()=='':
-            scID = lod[0]
-            scDr = d[0]
-            fgID1 = lod[1]
-            fgDr1 = d[1]
-            fgID2 = None
-            fgDr2 = None
-        elif d[1].read()=='':
-            scID = lod[1]
-            scDr = d[1]
-            fgID1 = lod[0]
-            fgDr1 = d[0]
-            fgID2 = None
-            fgDr2 = None
-        else:
-            scID = None
-            scDr = None
-            fgID2 = lod[1]
-            fgID2 = d[1]
-            fgID1 = lod[0]
-            fgDr1 = d[0]
-    elif len(lod)==1:
-        d = usbtmc.UsbTmcDriver(lod)
-        d.write(nameQ)
-        time.sleep(0.2)
-        if d.read()=='':
-            scID = lod
-            scDr = d
-            fgID1 = None
-            fgDr1 = None
-            fgID2 = None
-            fgDr2 = None
-        else:
-            fgID1 = lod
-            fgDr1 = d
-            fgID2 = None
-            fgDr2 = None
-            scID = None
-            scDr = None
-    else:
-        fgID1 = None
-        fgDr1 = None
-        fgID2 = None
-        fgDr2 = None
-        scID = None
-        scDr = None
 
-    return fgID1, fgDr1, fgID2, fgDr2,scID, scDr
-
-fgID1, fgDr1,fgID2, fgDr2, scID, scDr = discoverFG()
+fgID1, fgDr1,fgID2, fgDr2, scID, scDr = rigolUtils.discoverFG()
 
 fgDr1.write(nameQ)
 time.sleep(.2)
@@ -140,27 +57,29 @@ time.sleep(tscale*waitfactor)
 
 
 fieldnames=['bias','amp','field','field_f','phase','tscale','fft']
-csvfile = open('./data1.csv','w')
+csvfile = open('./data_no_fb_10kHz.csv','w')
 writer=csv.writer(csvfile,delimiter=',')
 writer.writerow(fieldnames)
+
+f_bias = 1e-6
+d_bias=50
+amp_lo = 5.
+f_lo = 1e4
+
 try:
-    for dc in [.3,.45,.5]:
-        for amp_drive in [.1]:
+    for dc in [.25,.5,1.]:
+        for amp_drive in [.125,.25,.5]:
             for f_field in [10.,100.,1000.]:
-                for amp_field in [.1, 1., 10.]:
-                    for phase_inv in [1.]:
+                for amp_field in [.1,1.,10.]:
+                    for phase_inv in [-1]:#,1.]:
+                        #if (dc==.4 and f_field==1000.) or (dc==.5):
+                        amp_bias = dc*2.
+
                         scope.run()
                         tscale = 2e-3
                         scope.setTimeScale(tscale)
                         scope.setScale(2,10.)
                         scope.setOffset(2,0)    
-
-                        f_bias = 1e-6
-                        amp_bias = dc*2.
-                        d_bias=50
-
-                        f_lo = 1e5
-                        amp_lo = 5.
                         ph_lo = phase_inv*np.arange(-180,180,1)
                         ave = 14.0*np.ones(ph_lo.shape)
                         #1022
@@ -174,7 +93,7 @@ try:
 
                         fg1.on(1)
                         fg2.on(1)
-                        
+
                         fg1.on(2)
                         fg2.on(2)
 
@@ -191,29 +110,33 @@ try:
                                 break
                             else:
                                 idx += 1
-
-                        top = scope.getMax(2)
                         idx = np.argmin(abs(ave))
                         ph = ph_lo[idx]
                         print "Min voltage phase: ",ph, ave[idx]
                         fg2.phase(1,ph)
-
+                        #fg2.phase(1,-180.)
                         tscale = 1./f_field*20.#timescale for fft
                         scope.setTimeScale(tscale)
-                        if top<=0.01:                                           
-                            scope.setScale(2,.05)
-                        elif top>0.01 and top<=0.5:                                           
-                            scope.setScale(2,.1)
-                        elif top>0.5 and top<=1:
-                            scope.setScale(2,.2)
-                        elif top>1 and top<=2.5:
-                            scope.setScale(2,.5)
-                        elif top>2.5 and top<=5:
-                            scope.setScale(2,1.0)
-                        else:
-                            scope.setScale(2,2.0)
-                                
-                        scope.mathScale(20)
+                        mmax = scope.getMax(2)
+                        while mmax>15.:
+                            time.sleep(max(200e-3,tscale)*waitfactor)
+                            mmax = scope.getMax(2)
+                        mmin = scope.getMin(2)
+                        while mmin>15.:
+                            time.sleep(max(200e-3,tscale)*waitfactor)
+                            mmin = scope.getMin(2)
+
+                        top = 1.25*max(mmax,abs(mmin))
+                        print "top ", top
+                        scope.setScale(2,top/5.0)
+
+                        mmax = scope.getMax(2)
+                        mmin = scope.getMin(2)
+                        top = 1.25*max(mmax,abs(mmin))
+                        print "top ", top
+                        scope.setScale(2,top/5.0)
+
+                        scope.mathScale(10,21)
                         scope.setOffset(2,0)
                         scope.setFFT(2, 1, f_field)
 
@@ -229,11 +152,11 @@ try:
 
     csvfile.close()
 
-    fg1.off(1)
-    fg2.off(1)
+    #fg1.off(1)
+    #fg2.off(1)
 
-    fg1.off(2)
-    fg2.off(2)
+    #fg1.off(2)
+    #fg2.off(2)
 
     fg2.local()
     fg1.local()
@@ -242,12 +165,12 @@ try:
 except KeyboardInterrupt:
     csvfile.close()
 
-    print "Quitting on: ", field_f, amp_field, dc, amp_drive
-    fg1.off(1)
-    fg2.off(1)
+    print "Quitting"
+    #fg1.off(1)
+    #fg2.off(1)
 
-    fg1.off(2)
-    fg2.off(2)
+    #fg1.off(2)
+    #fg2.off(2)
 
     fg2.local()
     fg1.local()

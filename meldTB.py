@@ -33,7 +33,7 @@ fg1 = rigolFG.RigolFunctionGenerator(device=fgID1)
 fg2 = rigolFG.RigolFunctionGenerator(device=fgID2)
 
 adjustfactor = 12.
-waitfactor = 48.
+waitfactor = 36.
 
 tscale = 2e-3
 scope.setTimeScale(tscale)    
@@ -57,98 +57,89 @@ time.sleep(tscale*waitfactor)
 
 
 fieldnames=['bias','amp','field','field_f','phase','tscale','fft']
-csvfile = open('./data_no_fb_10kHz.csv','w')
+csvfile = open('./data_fb_rev.csv','a')
 writer=csv.writer(csvfile,delimiter=',')
 writer.writerow(fieldnames)
 
 f_bias = 1e-6
 d_bias=50
 amp_lo = 5.
-f_lo = 1e4
+f_lo = 10e4
 
 try:
-    for dc in [.25,.5,1.]:
-        for amp_drive in [.125,.25,.5]:
-            for f_field in [10.,100.,1000.]:
-                for amp_field in [.1,1.,10.]:
-                    for phase_inv in [-1]:#,1.]:
-                        #if (dc==.4 and f_field==1000.) or (dc==.5):
-                        amp_bias = dc*2.
+    for [amp_drive,dc] in [[.1,.5],[.2,.5],[.3,.5],[.1,.6],[.2,.6],[.3,.6],[.1,.7],[.2,.7],[.3,.7]]:#
+        for f_field in [10.,100.,1000.]:
+            for amp_field in [.1,1.,10.]:
+                for ph in [0.,90.]:
+                    #if (dc==.4 and f_field==1000.) or (dc==.5):
+                    amp_bias = dc*2.
 
-                        scope.run()
-                        tscale = 2e-3
-                        scope.setTimeScale(tscale)
-                        scope.setScale(2,10.)
-                        scope.setOffset(2,0)    
-                        ph_lo = phase_inv*np.arange(-180,180,1)
-                        ave = 14.0*np.ones(ph_lo.shape)
-                        #1022
-                        fg1.square(2,f_bias,amp_bias,0.,50)#bias
-                        fg1.sine(1,f_field,amp_field,0.,0)#field
+                    scope.run()
+                    tscale = 2e-3
+                    scope.setTimeScale(tscale)
+                    scope.setScale(2,10.)
+                    scope.setOffset(2,0)    
+                    ph_lo = np.arange(-180.,180.,90.)
+                    ave = 14.0*np.ones(ph_lo.shape)
+                    #1022
+                    fg1.square(2,f_bias,amp_bias,0.,50)#bias
+                    fg1.sine(1,f_field,amp_field,0.,0)#field
 
-                        idx=0
-                        #1022u
-                        fg2.sine(2,f_lo,amp_drive,0.,0)#drive
-                        fg2.sine(1,f_lo,amp_lo,0.,0)#lo - need to adjust phase
+                    idx=0
+                    #1022u
+                    fg2.sine(2,f_lo,amp_drive,0.,0)#drive
+                    fg2.sine(1,f_lo,amp_lo,0.,0)#lo - need to adjust phase
 
-                        fg1.on(1)
-                        fg2.on(1)
+                    fg1.on(1)
+                    fg2.on(1)
 
-                        fg1.on(2)
-                        fg2.on(2)
+                    fg1.on(2)
+                    fg2.on(2)
 
-                        time.sleep(waitfactor*tscale)
-                        time.sleep(waitfactor*tscale)
-
-                        for ph in ph_lo:
-                            #sweep until error stops decreasing
-                            fg2.phase(1,ph)
-                            time.sleep(waitfactor*tscale)
-                            ave[idx] = scope.getAve(2)
-                            print ph, ave[idx]
-                            if idx>=1 and abs(ave[idx])>abs(ave[idx-1]) and abs(ave[idx-1])<1.:
-                                break
-                            else:
-                                idx += 1
-                        idx = np.argmin(abs(ave))
-                        ph = ph_lo[idx]
-                        print "Min voltage phase: ",ph, ave[idx]
-                        fg2.phase(1,ph)
-                        #fg2.phase(1,-180.)
-                        tscale = 1./f_field*20.#timescale for fft
-                        scope.setTimeScale(tscale)
-                        mmax = scope.getMax(2)
-                        while mmax>15.:
-                            time.sleep(max(200e-3,tscale)*waitfactor)
-                            mmax = scope.getMax(2)
-                        mmin = scope.getMin(2)
-                        while mmin>15.:
-                            time.sleep(max(200e-3,tscale)*waitfactor)
-                            mmin = scope.getMin(2)
-
-                        top = 1.25*max(mmax,abs(mmin))
-                        print "top ", top
-                        scope.setScale(2,top/5.0)
-
-                        mmax = scope.getMax(2)
-                        mmin = scope.getMin(2)
-                        top = 1.25*max(mmax,abs(mmin))
-                        print "top ", top
-                        scope.setScale(2,top/5.0)
-
-                        scope.mathScale(10,21)
-                        scope.setOffset(2,0)
-                        scope.setFFT(2, 1, f_field)
-
+                    time.sleep(waitfactor*tscale)
+                    time.sleep(waitfactor*tscale)
+                    #for ph in ph_lo:
+                    #    #sweep until error stops decreasing
+                    #    fg2.phase(1,ph)
+                    #    time.sleep(waitfactor*tscale)
+                    #    ave[idx] = scope.getAve(2)
+                    #    print ph, ave[idx]
+                    #    if idx>=1 and abs(ave[idx])>abs(ave[idx-1]) and abs(ave[idx-1])<1.:
+                    #        break
+                    #    else:
+                    #        idx += 1
+                    #idx = np.argmin(abs(ave))
+                    #ph = ph_lo[idx]
+                    #print "Min voltage phase: ",ph, ave[idx]
+                    fg2.phase(1,ph)
+                    tscale = 1./f_field*20.#timescale for fft
+                    scope.setTimeScale(tscale)
+                    mmax = scope.getMax(2)
+                    while mmax>15.:
                         time.sleep(max(200e-3,tscale)*waitfactor)
+                        mmax = scope.getMax(2)
+                    mmin = scope.getMin(2)
+                    while mmin>15.:
+                        time.sleep(max(200e-3,tscale)*waitfactor)
+                        mmin = scope.getMin(2)
 
-                        scope.stop()
-                        wav=scope.getWave('math')
-                        wav=string.split(wav,',')
-                        wav=[string.atof(w) for w in wav]
-                        row=[dc,amp_drive,amp_field,f_field,ph,tscale]
-                        row=np.hstack((row,wav))
-                        writer.writerow(row)
+                    top = min(25.0,1.3*max(mmax,abs(mmin)))
+                    print "top ", top
+                    scope.setScale(2,top/5.0)
+
+                    scope.mathScale(10,21)
+                    scope.setOffset(2,0)
+                    scope.setFFT(2, 1, f_field)
+
+                    time.sleep(max(200e-3,tscale)*waitfactor)
+
+                    scope.stop()
+                    wav=scope.getWave('math')
+                    wav=string.split(wav,',')
+                    wav=[string.atof(w) for w in wav]
+                    row=[dc,amp_drive,amp_field,f_field,ph,tscale]
+                    row=np.hstack((row,wav))
+                    writer.writerow(row)
 
     csvfile.close()
 
